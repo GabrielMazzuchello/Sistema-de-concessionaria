@@ -13,8 +13,8 @@ conexao_banco = mysql.connector.connect(
 
 cursor = conexao_banco.cursor()
 
-# Função para adicionar veículo
-def adicionarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
+# Função para adicionar veículos
+def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
     # Verifica se todos os campos foram preenchidos
     if placa and ano and marca and modelo and cor and categoria and preco and integridade:
         try:
@@ -30,6 +30,28 @@ def adicionarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integrida
     else:
         # Se algum campo estiver em branco mostra a mensagem de erro
         messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de adicionar o veículo.")
+
+#Função para remover veículos
+def removerVeiculo(placa) :
+    print(type(placa))
+    if placa :
+        comando = ('SELECT * FROM veiculos WHERE placa = %s')
+        cursor.execute(comando, (placa,))
+        resultado = cursor.fetchone()
+
+        if len(resultado) > 0:
+            try:
+                # Comando SQL para deletar
+                comando = ("DELETE FROM veiculos WHERE placa = %s")
+                cursor.execute(comando, (placa,))
+                conexao_banco.commit()
+                # Exibe mensagem de sucesso
+                messagebox.showinfo("Sucesso", "Carro removido com sucesso!")
+            except mysql.connector.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao remover o veículo: {erro}")
+    else:
+        # Se algum campo estiver em branco mostra a mensagem de erro
+        messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.")           
 
 # Função principal para a interface
 def abrir_estoque():
@@ -85,21 +107,23 @@ def abrir_estoque():
     button_frame = tk.Frame(root, pady=10)
     button_frame.pack(side=tk.TOP, fill=tk.X)
 
-    tk.Button(button_frame, text="Adicionar", command=lambda: adicionarVeiculo(
+    tk.Button(button_frame, text="Cadastrar", command=lambda: cadastarVeiculo(
         placa_entrada.get(), ano_entrada.get(), marca_entrada.get(),
         modelo_entrada.get(), cor_entrada.get(), categoria_entrada.get(),
         preco_entrada.get(), integridade_entrada.get()
     ), width=12).pack(side=tk.LEFT, padx=10)
 
-    tk.Button(button_frame, text="Atualizar", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Excluir", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Alterar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Excluir", command=lambda: removerVeiculo(placa_entrada.get()), width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Vender", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Histórico de vendas", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Comisão", width=12).pack(side=tk.LEFT, padx=10)
 
     # Tabela de Produtos
     table_frame = tk.Frame(root, pady=10)
     table_frame.pack(fill=tk.BOTH, expand=True)
 
-    columns = ("ID", "Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Estado")
+    columns = ("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Estado")
     tree = ttk.Treeview(table_frame, columns=columns, show="headings")
 
     for col in columns:
@@ -119,9 +143,6 @@ def entrar():
     comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s';
     cursor.execute(comando, (usuario, senha));
     resultado = cursor.fetchone();
-    print(resultado)
-    print(usuario)
-    print(senha)
 
     if len(resultado) > 0:
         messagebox.showinfo("Login", "Login realizado com sucesso!")
