@@ -91,12 +91,11 @@ def abrir_estoque():
         preco_entrada.get(), integridade_entrada.get()
     ), width=12).pack(side=tk.LEFT, padx=10)
 
-    tk.Button(button_frame, text="Atualizar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Alterar", width=12).pack(side=tk.LEFT, padx=10)
     tk.Button(button_frame, text="Excluir", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Vender", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Histórico de vendas", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Comisão", width=12).pack(side=tk.LEFT, padx=10)
 
     # Tabela de Produtos
     table_frame = tk.Frame(root, pady=10)
