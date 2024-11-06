@@ -116,7 +116,14 @@ def entrar():
     usuario = entrada_usuario.get()
     senha = entrada_senha.get()
 
-    if usuario == "admin" and senha == "123":
+    comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s';
+    cursor.execute(comando, (usuario, senha));
+    resultado = cursor.fetchone();
+    print(resultado)
+    print(usuario)
+    print(senha)
+
+    if len(resultado) > 0:
         messagebox.showinfo("Login", "Login realizado com sucesso!")
         abrir_estoque()
     else:
