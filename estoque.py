@@ -14,14 +14,14 @@ conexao_banco = mysql.connector.connect(
 cursor = conexao_banco.cursor()
 
 # Função para adicionar veículo
-def adicionarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, estado):
+def adicionarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
     # Verifica se todos os campos foram preenchidos
-    if placa and ano and marca and modelo and cor and categoria and preco and estado:
+    if placa and ano and marca and modelo and cor and categoria and preco and integridade:
         try:
             # Comando SQL de inserção
-            comando = ("INSERT INTO veiculos (placa, ano, marca, modelo, cor, categoria, preco, estado) "
+            comando = ("INSERT INTO veiculos (placa, ano, marca, modelo, cor, categoria, preco, integridade) "
                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
-            cursor.execute(comando, (placa, ano, marca, modelo, cor, categoria, preco, estado))
+            cursor.execute(comando, (placa, ano, marca, modelo, cor, categoria, preco, integridade))
             conexao_banco.commit()
             # Exibe mensagem de sucesso
             messagebox.showinfo("Sucesso", "Carro cadastrado com sucesso!")
@@ -76,10 +76,10 @@ def abrir_estoque():
     preco_entrada = tk.Entry(form_frame)
     preco_entrada.grid(row=3, column=1, padx=5, pady=5)
 
-    # Estado
-    tk.Label(form_frame, text="Estado:").grid(row=3, column=2, padx=5, pady=5)
-    estado_entrada = tk.Entry(form_frame)
-    estado_entrada.grid(row=3, column=3, padx=5, pady=5)
+    # Integridade
+    tk.Label(form_frame, text="Integridade:").grid(row=3, column=2, padx=5, pady=5)
+    integridade_entrada = tk.Entry(form_frame)
+    integridade_entrada.grid(row=3, column=3, padx=5, pady=5)
 
     # Botões de Ação
     button_frame = tk.Frame(root, pady=10)
@@ -88,7 +88,7 @@ def abrir_estoque():
     tk.Button(button_frame, text="Adicionar", command=lambda: adicionarVeiculo(
         placa_entrada.get(), ano_entrada.get(), marca_entrada.get(),
         modelo_entrada.get(), cor_entrada.get(), categoria_entrada.get(),
-        preco_entrada.get(), estado_entrada.get()
+        preco_entrada.get(), integridade_entrada.get()
     ), width=12).pack(side=tk.LEFT, padx=10)
 
     tk.Button(button_frame, text="Atualizar", width=12).pack(side=tk.LEFT, padx=10)
