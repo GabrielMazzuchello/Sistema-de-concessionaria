@@ -5,10 +5,10 @@ import mysql.connector
 
 # Conexão com o banco de dados
 conexao_banco = mysql.connector.connect(
-    host="127.0.0.1",
+    host="localhost",
     user="root",
     password="",
-    database="estoque"
+    database="concessionaria"
 )
 
 cursor = conexao_banco.cursor()
