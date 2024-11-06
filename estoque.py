@@ -14,7 +14,7 @@ conexao_banco = mysql.connector.connect(
 cursor = conexao_banco.cursor()
 
 # Função para adicionar veículo
-def adicionarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
+def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
     # Verifica se todos os campos foram preenchidos
     if placa and ano and marca and modelo and cor and categoria and preco and integridade:
         try:
@@ -85,7 +85,7 @@ def abrir_estoque():
     button_frame = tk.Frame(root, pady=10)
     button_frame.pack(side=tk.TOP, fill=tk.X)
 
-    tk.Button(button_frame, text="Adicionar", command=lambda: adicionarVeiculo(
+    tk.Button(button_frame, text="Cadastrar", command=lambda: cadastarVeiculo(
         placa_entrada.get(), ano_entrada.get(), marca_entrada.get(),
         modelo_entrada.get(), cor_entrada.get(), categoria_entrada.get(),
         preco_entrada.get(), integridade_entrada.get()
@@ -94,12 +94,15 @@ def abrir_estoque():
     tk.Button(button_frame, text="Atualizar", width=12).pack(side=tk.LEFT, padx=10)
     tk.Button(button_frame, text="Excluir", width=12).pack(side=tk.LEFT, padx=10)
     tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Pesquisar", width=12).pack(side=tk.LEFT, padx=10)
 
     # Tabela de Produtos
     table_frame = tk.Frame(root, pady=10)
     table_frame.pack(fill=tk.BOTH, expand=True)
 
-    columns = ("ID", "Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Estado")
+    columns = ("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Estado")
     tree = ttk.Treeview(table_frame, columns=columns, show="headings")
 
     for col in columns:
@@ -116,7 +119,11 @@ def entrar():
     usuario = entrada_usuario.get()
     senha = entrada_senha.get()
 
-    if usuario == "admin" and senha == "123":
+    comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s';
+    cursor.execute(comando, (usuario, senha));
+    resultado = cursor.fetchone();
+
+    if len(resultado) > 0:
         messagebox.showinfo("Login", "Login realizado com sucesso!")
         abrir_estoque()
     else:
