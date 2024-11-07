@@ -7,7 +7,7 @@ import mysql.connector
 conexao_banco = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="",
+    password="123456789",
     database="concessionaria"
 )
 
@@ -31,71 +31,118 @@ def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridad
         # Se algum campo estiver em branco mostra a mensagem de erro
         messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de adicionar o veículo.")
 
+def removerVeiculo(placa) :
+    print(type(placa))
+    if placa :
+        comando = ('SELECT * FROM veiculos WHERE placa = %s')
+        cursor.execute(comando, (placa,))
+        resultado = cursor.fetchone()
+
+        if len(resultado) > 0:
+            try:
+                # Comando SQL para deletar
+                comando = ("DELETE FROM veiculos WHERE placa = %s")
+                cursor.execute(comando, (placa,))
+                conexao_banco.commit()
+                # Exibe mensagem de sucesso
+                messagebox.showinfo("Sucesso", "Carro removido com sucesso!")
+            except mysql.connector.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao remover o veículo: {erro}")
+    else:
+        # Se algum campo estiver em branco mostra a mensagem de erro
+        messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.") 
+
+def ocultar_todos_formularios():
+    form_frame_add.pack_forget()
+    form_frame_remove.pack_forget()
+
+def mostrar_formulario_add():
+    ocultar_todos_formularios()
+    form_frame_add.pack(side=tk.TOP, fill=tk.X) 
+
+def mostar_formulario_remover():
+    ocultar_todos_formularios()
+    form_frame_remove.pack(side=tk.TOP, fill=tk.X)
+
+
 # Função principal para a interface
 def abrir_estoque():
     root = tk.Tk()
     root.title("Gerenciador de Estoque")
-    root.geometry("800x500")
-
-    # Frame para Formulário de Entrada
-    form_frame = tk.Frame(root, padx=10, pady=10)
-    form_frame.pack(side=tk.TOP, fill=tk.X)
-
-    # Placa
-    tk.Label(form_frame, text="Placa:").grid(row=0, column=0, padx=5, pady=5)
-    placa_entrada = tk.Entry(form_frame)
-    placa_entrada.grid(row=0, column=1, padx=5, pady=5)
-
-    # Ano
-    tk.Label(form_frame, text="Ano:").grid(row=0, column=2, padx=5, pady=5)
-    ano_entrada = tk.Entry(form_frame)
-    ano_entrada.grid(row=0, column=3, padx=5, pady=5)
-
-    # Marca
-    tk.Label(form_frame, text="Marca:").grid(row=1, column=0, padx=5, pady=5)
-    marca_entrada = tk.Entry(form_frame)
-    marca_entrada.grid(row=1, column=1, padx=5, pady=5)
-
-    # Modelo
-    tk.Label(form_frame, text="Modelo:").grid(row=1, column=2, padx=5, pady=5)
-    modelo_entrada = tk.Entry(form_frame)
-    modelo_entrada.grid(row=1, column=3, padx=5, pady=5)
-
-    # Cor
-    tk.Label(form_frame, text="Cor:").grid(row=2, column=0, padx=5, pady=5)
-    cor_entrada = tk.Entry(form_frame)
-    cor_entrada.grid(row=2, column=1, padx=5, pady=5)
-
-    # Categoria
-    tk.Label(form_frame, text="Categoria:").grid(row=2, column=2, padx=5, pady=5)
-    categoria_entrada = tk.Entry(form_frame)
-    categoria_entrada.grid(row=2, column=3, padx=5, pady=5)
-
-    # Preço
-    tk.Label(form_frame, text="Preço:").grid(row=3, column=0, padx=5, pady=5)
-    preco_entrada = tk.Entry(form_frame)
-    preco_entrada.grid(row=3, column=1, padx=5, pady=5)
-
-    # Integridade
-    tk.Label(form_frame, text="Integridade:").grid(row=3, column=2, padx=5, pady=5)
-    integridade_entrada = tk.Entry(form_frame)
-    integridade_entrada.grid(row=3, column=3, padx=5, pady=5)
+    root.geometry("800x500")  
+    global form_frame_add, form_frame_remove
 
     # Botões de Ação
     button_frame = tk.Frame(root, pady=10)
     button_frame.pack(side=tk.TOP, fill=tk.X)
 
-    tk.Button(button_frame, text="Cadastrar", command=lambda: cadastarVeiculo(
+    tk.Button(button_frame, text="Cadastrar", command=mostrar_formulario_add, width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Alterar", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Excluir", command=mostar_formulario_remover, width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Vender", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Histórico de vendas", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Comissão", width=12).pack(side=tk.LEFT, padx=10)
+
+    # Frame para Formulário de adicionar 
+    form_frame_add = tk.Frame(root, padx=10, pady=10)
+    form_frame_add.pack_forget()  # Oculta inicialmente
+
+    # Placa
+    tk.Label(form_frame_add, text="Placa:").grid(row=0, column=0, padx=5, pady=5)
+    placa_entrada = tk.Entry(form_frame_add)
+    placa_entrada.grid(row=0, column=1, padx=5, pady=5)
+
+    # Ano
+    tk.Label(form_frame_add, text="Ano:").grid(row=0, column=2, padx=5, pady=5)
+    ano_entrada = tk.Entry(form_frame_add)
+    ano_entrada.grid(row=0, column=3, padx=5, pady=5)
+
+    # Marca
+    tk.Label(form_frame_add, text="Marca:").grid(row=1, column=0, padx=5, pady=5)
+    marca_entrada = tk.Entry(form_frame_add)
+    marca_entrada.grid(row=1, column=1, padx=5, pady=5)
+
+    # Modelo
+    tk.Label(form_frame_add, text="Modelo:").grid(row=1, column=2, padx=5, pady=5)
+    modelo_entrada = tk.Entry(form_frame_add)
+    modelo_entrada.grid(row=1, column=3, padx=5, pady=5)
+
+    # Cor
+    tk.Label(form_frame_add, text="Cor:").grid(row=2, column=0, padx=5, pady=5)
+    cor_entrada = tk.Entry(form_frame_add)
+    cor_entrada.grid(row=2, column=1, padx=5, pady=5)
+
+    # Categoria
+    tk.Label(form_frame_add, text="Categoria:").grid(row=2, column=2, padx=5, pady=5)
+    categoria_entrada = tk.Entry(form_frame_add)
+    categoria_entrada.grid(row=2, column=3, padx=5, pady=5)
+
+    # Preço
+    tk.Label(form_frame_add, text="Preço:").grid(row=3, column=0, padx=5, pady=5)
+    preco_entrada = tk.Entry(form_frame_add)
+    preco_entrada.grid(row=3, column=1, padx=5, pady=5)
+
+    # Integridade
+    tk.Label(form_frame_add, text="Integridade:").grid(row=3, column=2, padx=5, pady=5)
+    integridade_entrada = tk.Entry(form_frame_add)
+    integridade_entrada.grid(row=3, column=3, padx=5, pady=5)
+
+    # Botão de Cadastrar dentro do formulário
+    tk.Button(form_frame_add, text="Cadastrar", command=lambda: cadastarVeiculo(
         placa_entrada.get(), ano_entrada.get(), marca_entrada.get(),
         modelo_entrada.get(), cor_entrada.get(), categoria_entrada.get(),
         preco_entrada.get(), integridade_entrada.get()
-    ), width=12).pack(side=tk.LEFT, padx=10)
+    ), width=12).grid(row=4, column=1, columnspan=2, pady=10)
 
-    tk.Button(button_frame, text="Alterar", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Excluir", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Vender", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Histórico de vendas", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Comisão", width=12).pack(side=tk.LEFT, padx=10)
+    # frame de remover veiculo
+
+    form_frame_remove = tk.Frame(root, padx=10, pady=10)
+    tk.Label(form_frame_remove, text="Placa:").grid(row=0, column=0, padx=5, pady=5)
+    placa_remover_entrada = tk.Entry(form_frame_remove)
+    placa_remover_entrada.grid(row=0, column=1, padx=5, pady=5)
+
+    tk.Button(form_frame_remove, text="Remover", command=lambda: removerVeiculo(placa_remover_entrada.get())).grid(row=1, column=0, columnspan=2, pady=10)
+
 
     # Tabela de Produtos
     table_frame = tk.Frame(root, pady=10)
@@ -121,12 +168,13 @@ def entrar():
     comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s';
     cursor.execute(comando, (usuario, senha));
     resultado = cursor.fetchone();
-
+    
     if len(resultado) > 0:
         messagebox.showinfo("Login", "Login realizado com sucesso!")
         abrir_estoque()
     else:
         messagebox.showerror("Erro", "Usuário ou senha incorretos.")
+
 
 def registrar_novo_usuario(usuario, senha):
     if usuario and senha:
@@ -165,7 +213,6 @@ def abrir_janela_cadastro():
     
     # Botão para Registrar
     tk.Button(cadastro_window, text="Registrar", command=lambda: registrar_novo_usuario(novo_usuario_entrada.get(), nova_senha_entrada.get())).pack(pady=10)
-
 
 # Janela principal
 root = tk.Tk()
