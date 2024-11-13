@@ -7,7 +7,7 @@ import mysql.connector
 conexao_banco = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="123456789",
+    password="",
     database="concessionaria"
 )
 
@@ -118,7 +118,7 @@ def buscarVeiculo(placa):
 
 def registrarVendaHistorico(placa, nome_cliente, cpf_cliente, vendedor):
     try:
-        comando = ("INSERT INTO historico_vendas (placa, nome_cliente, cpf_cliente, vendedor, data_venda) "
+        comando = ("INSERT INTO historico_vendas (placa, nome_cliente, cpf_cliente, vendedor) "
                    "VALUES (%s, %s, %s, %s, NOW())")
         cursor.execute(comando, (placa, nome_cliente, cpf_cliente, vendedor))
         conexao_banco.commit()
@@ -337,7 +337,7 @@ def abrir_estoque():
         usuario
     )).grid(row=4, column=0, columnspan=2, pady=10)
 
-    # frame para o histórico de venda 
+    # frame para o comissão
 
 
 
