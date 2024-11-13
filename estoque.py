@@ -51,7 +51,141 @@ def removerVeiculo(placa) :
                 messagebox.showerror("Erro", f"Erro ao remover o veículo: {erro}")
     else:
         # Se algum campo estiver em branco mostra a mensagem de erro
+<<<<<<< Updated upstream
         messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.")           
+=======
+        messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.") 
+
+# Função para remover veículo
+def alterarVeiculo(placa, novo_preco=None, nova_cor=None, nova_integridade=None):
+    if not placa:
+        messagebox.showwarning("Atenção", "Por favor, informe a placa do veículo.")
+        return
+    
+    try:
+        # Verifique se o veículo existe
+        cursor.execute("SELECT * FROM veiculos WHERE placa = %s", (placa,))
+        if cursor.fetchone() is None:
+            messagebox.showerror("Erro", "Veículo não encontrado.")
+            return
+
+        # Comando SQL para atualização parcial
+        valores = []
+        atualizacoes = []
+
+        if novo_preco:
+            atualizacoes.append("preco = %s")
+            valores.append(novo_preco)
+        if nova_cor:
+            atualizacoes.append("cor = %s")
+            valores.append(nova_cor)
+        if nova_integridade:
+            atualizacoes.append("integridade = %s")
+            valores.append(nova_integridade)
+
+        # Caso não haja nenhuma atualização, retorne
+        if not atualizacoes:
+            messagebox.showwarning("Atenção", "Nenhuma alteração foi especificada.")
+            return
+
+        # Monta o comando SQL dinâmico
+        comando = f"UPDATE veiculos SET {', '.join(atualizacoes)} WHERE placa = %s"
+        valores.append(placa)
+
+        # Executa a atualização
+        cursor.execute(comando, valores)
+        conexao_banco.commit()
+        messagebox.showinfo("Sucesso", "Veículo atualizado com sucesso!")
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao alterar o veículo: {erro}")
+
+# Função para buscar o veículo pela placa e retornar os dados
+def buscarVeiculo(placa):
+    if not placa:
+        messagebox.showwarning("Atenção", "Por favor, informe a placa do veículo.")
+        return None
+
+    try:
+        # Busca o veículo pela placa
+        cursor.execute("SELECT * FROM veiculos WHERE placa = %s", (placa,))
+        veiculo = cursor.fetchone()
+
+        if veiculo:
+            tree.delete(*tree.get_children())
+            tree.insert("", "end", values=veiculo)
+            return veiculo  # Retorna os dados do veículo como uma tupla
+
+        else:
+            messagebox.showerror("Erro", "Veículo não encontrado.")
+            return None
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao buscar o veículo: {erro}")
+        return None
+
+def registrarVendaHistorico(vendedor, nome_cliente, cpf_cliente, placa, valor):
+    try:
+        comando = ("INSERT INTO historico_vendas (vendedor, nome_cliente, cpf_cliente, placa, valor) "
+                   "VALUES (%s, %s, %s, %s, %s)")
+        cursor.execute(comando, (vendedor, nome_cliente, cpf_cliente, placa, valor))
+        conexao_banco.commit()
+        messagebox.showinfo("Sucesso", "Veículo vendido com sucesso e registrado no histórico!")
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao registrar a venda no histórico: {erro}")
+
+def venderVeiculo(placa, nome_cliente, cpf_cliente, usuario):
+    veiculo = buscarVeiculo(placa)
+    
+    if veiculo:
+        # Exibe os dados do veículo para confirmação antes da venda
+        tree.delete(*tree.get_children())
+        tree.insert("", "end", values=veiculo)
+        
+        resposta = messagebox.askyesno("Confirmar Venda", "Deseja realmente vender este veículo?")
+        if resposta:
+            try:                
+                # Registra a venda no histórico de vendas
+                registrarVendaHistorico(usuario, nome_cliente, cpf_cliente, placa, veiculo[6])
+                comissao(usuario, veiculo[6])
+
+                # Remove o veículo da tabela de veículos
+                cursor.execute("DELETE FROM veiculos WHERE placa = %s", (placa,))
+                conexao_banco.commit()
+                
+            except mysql.connector.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao vender o veículo: {erro}")
+
+def comissao(usuario, valor):
+    valor_veiculo = float(valor)
+    valor_comissao = valor_veiculo * 0.01
+    print(usuario)
+    print(valor_comissao)
+
+
+    
+
+    
+def ocultar_todos_formularios():
+    form_frame_add.pack_forget()
+    form_frame_remove.pack_forget()
+    form_frame_alterar.pack_forget()
+    form_frame_venda.pack_forget()
+
+def mostrar_formulario_add():
+    ocultar_todos_formularios()
+    form_frame_add.pack(side=tk.TOP, fill=tk.X) 
+
+def mostar_formulario_remover():
+    ocultar_todos_formularios()
+    form_frame_remove.pack(side=tk.TOP, fill=tk.X)
+
+def mostrar_formulario_alterar():
+    ocultar_todos_formularios()
+    form_frame_alterar.pack(side=tk.TOP, fill=tk.X)
+
+def mostrar_formulario_venda():
+    ocultar_todos_formularios()
+    form_frame_venda.pack(side=tk.TOP, fill=tk.X)
+>>>>>>> Stashed changes
 
 # Função principal para a interface
 def abrir_estoque():
