@@ -318,13 +318,13 @@ def abrir_estoque():
     placa_venda_entrada = tk.Entry(form_frame_venda)
     placa_venda_entrada.grid(row=0, column=1, padx=5, pady=5)
     
-    tk.Label(form_frame_venda, text="Nome do Cliente:").grid(row=0, column=0, padx=5, pady=5)
+    tk.Label(form_frame_venda, text="Nome do Cliente:").grid(row=1, column=0, padx=5, pady=5)
     nomeCliente_venda_entrada = tk.Entry(form_frame_venda)
-    nomeCliente_venda_entrada.grid(row=0, column=1, padx=5, pady=5)
+    nomeCliente_venda_entrada.grid(row=1, column=1, padx=5, pady=5)
 
-    tk.Label(form_frame_venda, text="CPF do Cliente:").grid(row=0, column=0, padx=5, pady=5)
+    tk.Label(form_frame_venda, text="CPF do Cliente:").grid(row=2, column=0, padx=5, pady=5)
     CPFcliente_venda_entrada = tk.Entry(form_frame_venda)
-    CPFcliente_venda_entrada.grid(row=0, column=1, padx=5, pady=5)
+    CPFcliente_venda_entrada.grid(row=2, column=1, padx=5, pady=5)
 
     # botão de busca do veiculo
     tk.Button(form_frame_venda, text="Buscar", command=lambda: buscarVeiculo(placa_venda_entrada.get())).grid(row=0, column=2, padx=5, pady=5)
@@ -337,7 +337,7 @@ def abrir_estoque():
         usuario
     )).grid(row=4, column=0, columnspan=2, pady=10)
 
-
+    # frame para o histórico de venda 
 
 
 
