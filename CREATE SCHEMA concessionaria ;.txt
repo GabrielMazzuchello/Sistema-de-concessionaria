@@ -1,0 +1,37 @@
+CREATE SCHEMA concessionaria ;
+
+CREATE TABLE usuarios (
+  id 				INT NOT NULL auto_increment,
+  usuario 			VARCHAR(45) NOT NULL,
+  senha 			INT NOT NULL,
+  PRIMARY KEY (id));
+
+CREATE TABLE veiculos (
+  placa 				VARCHAR(7) NOT NULL,
+  ano 				INT NOT NULL,
+  marca 			VARCHAR(45) NOT NULL,
+  modelo 			VARCHAR(45) NOT NULL,
+  cor 				VARCHAR(45) NOT NULL,
+  categoria 			VARCHAR(45) NOT NULL,
+  preco 			DECIMAL(10,2) NOT NULL,
+  integridade 			VARCHAR(45) NOT NULL,
+  PRIMARY KEY (placa));
+
+
+CREATE TABLE historico_vendas (
+  id 				INT NOT NULL AUTO_INCREMENT,
+  vendedor 			VARCHAR(50) NOT NULL,
+  nome_cliente 			VARCHAR(50) NOT NULL,
+  cpf_cliente 			INT NOT NULL,
+  placa 			VARCHAR(10) NOT NULL,
+  valor 			DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (id));
+
+CREATE TABLE comissoes(
+  id 				INT NOT NULL AUTO_INCREMENT,
+  vendedor 			VARCHAR(50) NOT NULL,
+  valor 			DECIMAL(10,2) NOT NULL,
+  id_vendas 		INT(5) NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (id_vendas) REFERENCES historico_vendas(id));
+
