@@ -14,11 +14,40 @@ conexao_banco = mysql.connector.connect(
 cursor = conexao_banco.cursor()
 
 # Função para adicionar veículos
+import re
+from tkinter import messagebox
+
 def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
     # Verifica se todos os campos foram preenchidos
     if placa and ano and marca and modelo and cor and categoria and preco and integridade:
+        # Verifica se o ano é um número e está dentro de um intervalo razoável
         try:
-            # Comando SQL de inserção
+            ano = int(ano)
+            if ano < 1900 or ano > 2024:  # Considerando anos de fabricação razoáveis
+                messagebox.showwarning("Atenção", "Ano inválido! Insira um ano entre 1900 e 2024.")
+                return
+        except ValueError:
+            messagebox.showwarning("Atenção", "Ano deve ser um número válido.")
+            return
+
+        # Verifica se a placa segue o formato padrão (exemplo: AAA-1234)
+        placa_pattern = r'^[A-Z]{3}-\d{4}$'
+        if not re.match(placa_pattern, placa):
+            messagebox.showwarning("Atenção", "Placa inválida! A placa deve seguir o formato AAA-1234.")
+            return
+
+        # Verifica se o preço é um número positivo
+        try:
+            preco = float(preco)
+            if preco <= 0:
+                messagebox.showwarning("Atenção", "Preço deve ser um valor positivo.")
+                return
+        except ValueError:
+            messagebox.showwarning("Atenção", "Preço deve ser um número válido.")
+            return
+        
+        # Se todas as verificações passarem, realiza a inserção no banco de dados
+        try:
             comando = ("INSERT INTO veiculos (placa, ano, marca, modelo, cor, categoria, preco, integridade) "
                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
             cursor.execute(comando, (placa, ano, marca, modelo, cor, categoria, preco, integridade))
@@ -30,6 +59,56 @@ def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridad
     else:
         # Se algum campo estiver em branco mostra a mensagem de erro
         messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de adicionar o veículo.")
+
+
+
+#Função para pesquisar veiculos
+def pesquisarVeiculo(marca, modelo, categoria, ano, placa, cor, preco_min, preco_max, integridade):
+    try:
+        # Monta o comando SQL dinamicamente
+        consulta = "SELECT * FROM veiculos WHERE 1=1"
+        valores = []
+
+        if marca:
+            consulta += " AND marca LIKE %s"
+            valores.append(f"%{marca}%")
+        if modelo:
+            consulta += " AND modelo LIKE %s"
+            valores.append(f"%{modelo}%")
+        if categoria:
+            consulta += " AND categoria LIKE %s"
+            valores.append(f"%{categoria}%")
+        if ano:
+            consulta += " AND ano = %s"
+            valores.append(ano)
+        if placa:
+            consulta += " AND placa LIKE %s"
+            valores.append(f"%{placa}%")
+        if cor:
+            consulta += " AND cor LIKE %s"
+            valores.append(f"%{cor}%")
+        if preco_min:
+            consulta += " AND preco >= %s"
+            valores.append(preco_min)
+        if preco_max:
+            consulta += " AND preco <= %s"
+            valores.append(preco_max)
+        if integridade:
+            consulta += " AND integridade LIKE %s"
+            valores.append(f"%{integridade}%")
+
+        # Executa a consulta
+        cursor.execute(consulta, valores)
+        resultados = cursor.fetchall()
+
+        # Atualiza o Treeview com os resultados
+        tree.delete(*tree.get_children())
+        for veiculo in resultados:
+            tree.insert("", "end", values=veiculo)
+
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao pesquisar veículos: {erro}")
+
 
 #Função para remover veículos
 def removerVeiculo(placa):
@@ -189,6 +268,13 @@ def exibirHistoricoVendas():
         tree.heading("Placa", text="Placa")
         tree.heading("Valor", text="Valor")
 
+        tree.column("ID", width=100, anchor=tk.CENTER)
+        tree.column("Vendedor", width=100, anchor=tk.CENTER)
+        tree.column("Cliente", width=100, anchor=tk.CENTER)
+        tree.column("CPF Cliente", width=100, anchor=tk.CENTER)
+        tree.column("Placa", width=100, anchor=tk.CENTER)
+        tree.column("Valor", width=100, anchor=tk.CENTER)
+
         # Busca os dados do histórico de vendas
         cursor.execute("SELECT id, vendedor, nome_cliente, cpf_cliente, placa, valor FROM historico_vendas")
         vendas = cursor.fetchall()
@@ -214,6 +300,13 @@ def exibirComissoes():
         tree.heading("ID Venda", text="ID Venda")
         tree.heading("Cliente", text="Cliente")
 
+        tree.column("ID", width=100, anchor=tk.CENTER)
+        tree.column("Vendedor", width=100, anchor=tk.CENTER)
+        tree.column("Valor", width=100, anchor=tk.CENTER)
+        tree.column("ID Venda", width=100, anchor=tk.CENTER)
+        tree.column("Cliente", width=100, anchor=tk.CENTER)
+        
+
         # Busca os dados das comissões
         cursor.execute("""
             SELECT c.id, c.vendedor, c.valor, c.id_vendas, hv.nome_cliente
@@ -229,7 +322,6 @@ def exibirComissoes():
     except mysql.connector.Error as erro:
         messagebox.showerror("Erro", f"Erro ao exibir comissões: {erro}")
 
-
 def alterarColunasTreeview():
     # Altera as colunas do Treeview para os dados dos carros
     tree["columns"] = ("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Integridade")
@@ -242,6 +334,15 @@ def alterarColunasTreeview():
     tree.heading("Categoria", text="Categoria")
     tree.heading("Preço", text="Preço")
     tree.heading("Integridade", text="Integridade")
+
+    tree.column("Placa", width=100, anchor=tk.CENTER)
+    tree.column("Ano", width=60, anchor=tk.CENTER)
+    tree.column("Marca", width=100, anchor=tk.CENTER)
+    tree.column("Modelo", width=100, anchor=tk.CENTER)
+    tree.column("Cor", width=80, anchor=tk.CENTER)
+    tree.column("Categoria", width=100, anchor=tk.CENTER)
+    tree.column("Preço", width=80, anchor=tk.CENTER)
+    tree.column("Integridade", width=100, anchor=tk.CENTER)
     
     
 def ocultar_todos_formularios():
@@ -249,31 +350,37 @@ def ocultar_todos_formularios():
     form_frame_remove.pack_forget()
     form_frame_alterar.pack_forget()
     form_frame_venda.pack_forget()
+    form_frame_pesquisa.pack_forget()
 
 def mostrar_formulario_add():
     ocultar_todos_formularios()
-    form_frame_add.pack(side=tk.TOP, fill=tk.X) 
+    form_frame_add.pack(fill=tk.X)  # Usando apenas fill para evitar problemas de layout
 
-def mostar_formulario_remover():
+def mostrar_formulario_pesquisa():
     ocultar_todos_formularios()
-    form_frame_remove.pack(side=tk.TOP, fill=tk.X)
+    form_frame_pesquisa.pack(fill=tk.X)
+
+def mostrar_formulario_remover():
+    ocultar_todos_formularios()
+    form_frame_remove.pack(fill=tk.X)
 
 def mostrar_formulario_alterar():
     ocultar_todos_formularios()
-    form_frame_alterar.pack(side=tk.TOP, fill=tk.X)
+    form_frame_alterar.pack(fill=tk.X)
 
 def mostrar_formulario_venda():
     ocultar_todos_formularios()
-    form_frame_venda.pack(side=tk.TOP, fill=tk.X)
+    form_frame_venda.pack(fill=tk.X)
+
 
 # Função principal para a interface
 def abrir_estoque():
     estoque_window = tk.Tk()
     estoque_window.title("Gerenciador de Estoque")
-    estoque_window.geometry("800x500")
+    estoque_window.geometry("950x550")
     login_window.destroy()  # Fecha a janela do login
 
-    global form_frame_add, form_frame_remove, form_frame_alterar, form_frame_venda, tree
+    global form_frame_add, form_frame_remove, form_frame_alterar, form_frame_venda, tree, form_frame_pesquisa
 
     # Frame para o Treeview (onde as informações dos veículos serão exibidas)
     tree_frame = tk.Frame(estoque_window)
@@ -292,15 +399,15 @@ def abrir_estoque():
     tree.heading("Preço", text="Preço")
     tree.heading("Integridade", text="Integridade")
 
-    # Configurando as larguras das colunas (opcional)
+    # Configurando as larguras das colunas 
     tree.column("Placa", width=100, anchor=tk.CENTER)
     tree.column("Ano", width=60, anchor=tk.CENTER)
-    tree.column("Marca", width=100, anchor=tk.W)
-    tree.column("Modelo", width=100, anchor=tk.W)
-    tree.column("Cor", width=80, anchor=tk.W)
-    tree.column("Categoria", width=100, anchor=tk.W)
-    tree.column("Preço", width=80, anchor=tk.E)
-    tree.column("Integridade", width=100, anchor=tk.W)
+    tree.column("Marca", width=100, anchor=tk.CENTER)
+    tree.column("Modelo", width=100, anchor=tk.CENTER)
+    tree.column("Cor", width=80, anchor=tk.CENTER)
+    tree.column("Categoria", width=100, anchor=tk.CENTER)
+    tree.column("Preço", width=80, anchor=tk.CENTER)
+    tree.column("Integridade", width=100, anchor=tk.CENTER)
 
     # Adicionando o Treeview ao layout
     tree.pack(fill=tk.BOTH, expand=True)
@@ -309,12 +416,13 @@ def abrir_estoque():
     button_frame = tk.Frame(estoque_window, pady=10)
     button_frame.pack(side=tk.TOP, fill=tk.X)
 
-    tk.Button(button_frame, text="Cadastrar", command=mostrar_formulario_add, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Alterar", command=mostrar_formulario_alterar, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Excluir", command=mostar_formulario_remover, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Vender", command=mostrar_formulario_venda, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Histórico de vendas", command=exibirHistoricoVendas, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Comissões", command=exibirComissoes, width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Cadastrar", command=mostrar_formulario_add, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Pesquisar", command=mostrar_formulario_pesquisa, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Alterar", command=mostrar_formulario_alterar, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Excluir", command=mostrar_formulario_remover, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Vender", command=mostrar_formulario_venda, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Histórico de vendas", command=exibirHistoricoVendas, width=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Comissões", command=exibirComissoes, width=15).pack(side=tk.LEFT, padx=10)
 
 
     # Frame para Formulário de adicionar 
@@ -324,49 +432,49 @@ def abrir_estoque():
 
     # Placa
     tk.Label(form_frame_add, text="Placa:").grid(row=0, column=0, padx=5, pady=5)
-    placa_entrada = tk.Entry(form_frame_add)
-    placa_entrada.grid(row=0, column=1, padx=5, pady=5)
+    placa_entrada_add = tk.Entry(form_frame_add)
+    placa_entrada_add.grid(row=0, column=1, padx=5, pady=5)
 
     # Ano
     tk.Label(form_frame_add, text="Ano:").grid(row=0, column=2, padx=5, pady=5)
-    ano_entrada = tk.Entry(form_frame_add)
-    ano_entrada.grid(row=0, column=3, padx=5, pady=5)
+    ano_entrada_add = tk.Entry(form_frame_add)
+    ano_entrada_add.grid(row=0, column=3, padx=5, pady=5)
 
     # Marca
     tk.Label(form_frame_add, text="Marca:").grid(row=1, column=0, padx=5, pady=5)
-    marca_entrada = tk.Entry(form_frame_add)
-    marca_entrada.grid(row=1, column=1, padx=5, pady=5)
+    marca_entrada_add = tk.Entry(form_frame_add)
+    marca_entrada_add.grid(row=1, column=1, padx=5, pady=5)
 
     # Modelo
     tk.Label(form_frame_add, text="Modelo:").grid(row=1, column=2, padx=5, pady=5)
-    modelo_entrada = tk.Entry(form_frame_add)
-    modelo_entrada.grid(row=1, column=3, padx=5, pady=5)
+    modelo_entrada_add = tk.Entry(form_frame_add)
+    modelo_entrada_add.grid(row=1, column=3, padx=5, pady=5)
 
     # Cor
     tk.Label(form_frame_add, text="Cor:").grid(row=2, column=0, padx=5, pady=5)
-    cor_entrada = tk.Entry(form_frame_add)
-    cor_entrada.grid(row=2, column=1, padx=5, pady=5)
+    cor_entrada_add = tk.Entry(form_frame_add)
+    cor_entrada_add.grid(row=2, column=1, padx=5, pady=5)
 
     # Categoria
     tk.Label(form_frame_add, text="Categoria:").grid(row=2, column=2, padx=5, pady=5)
-    categoria_entrada = tk.Entry(form_frame_add)
-    categoria_entrada.grid(row=2, column=3, padx=5, pady=5)
+    categoria_entrada_add = tk.Entry(form_frame_add)
+    categoria_entrada_add.grid(row=2, column=3, padx=5, pady=5)
 
     # Preço
     tk.Label(form_frame_add, text="Preço:").grid(row=3, column=0, padx=5, pady=5)
-    preco_entrada = tk.Entry(form_frame_add)
-    preco_entrada.grid(row=3, column=1, padx=5, pady=5)
+    preco_entrada_add = tk.Entry(form_frame_add)
+    preco_entrada_add.grid(row=3, column=1, padx=5, pady=5)
 
     # Integridade
     tk.Label(form_frame_add, text="Integridade:").grid(row=3, column=2, padx=5, pady=5)
-    integridade_entrada = tk.Entry(form_frame_add)
-    integridade_entrada.grid(row=3, column=3, padx=5, pady=5)
+    integridade_entrada_add = tk.Entry(form_frame_add)
+    integridade_entrada_add.grid(row=3, column=3, padx=5, pady=5)
 
     # Botão de Cadastrar dentro do formulário
     tk.Button(form_frame_add, text="Cadastrar", command=lambda: cadastarVeiculo(
-        placa_entrada.get(), ano_entrada.get(), marca_entrada.get(),
-        modelo_entrada.get(), cor_entrada.get(), categoria_entrada.get(),
-        preco_entrada.get(), integridade_entrada.get()
+        placa_entrada_add.get(), ano_entrada_add.get(), marca_entrada_add.get(),
+        modelo_entrada_add.get(), cor_entrada_add.get(), categoria_entrada_add.get(),
+        preco_entrada_add.get(), integridade_entrada_add.get()
     ), width=12).grid(row=4, column=1, columnspan=2, pady=10)
 
     # frame de remover veiculo
@@ -464,10 +572,77 @@ def abrir_estoque():
         usuario
     )).grid(row=4, column=0, columnspan=2, pady=10)
 
+    # Frame para pesquisa
+    form_frame_pesquisa = tk.Frame(estoque_window, padx=10, pady=10)
+    form_frame_pesquisa.pack_forget()  # Oculta inicialmente
+
+    # Campos de pesquisa
+    lbl_placa = tk.Label(form_frame_pesquisa, text="Placa:")
+    lbl_placa.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    placa_entrada = tk.Entry(form_frame_pesquisa)
+    placa_entrada.grid(row=0, column=1, padx=5, pady=5)
+
+    lbl_ano = tk.Label(form_frame_pesquisa, text="Ano:")
+    lbl_ano.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+    ano_entrada = tk.Entry(form_frame_pesquisa)
+    ano_entrada.grid(row=0, column=3, padx=5, pady=5)
+
+    lbl_marca = tk.Label(form_frame_pesquisa, text="Marca:")
+    lbl_marca.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+    marca_entrada = tk.Entry(form_frame_pesquisa)
+    marca_entrada.grid(row=1, column=1, padx=5, pady=5)
+
+    lbl_modelo = tk.Label(form_frame_pesquisa, text="Modelo:")
+    lbl_modelo.grid(row=1, column=2, padx=5, pady=5, sticky="e")
+    modelo_entrada = tk.Entry(form_frame_pesquisa)
+    modelo_entrada.grid(row=1, column=3, padx=5, pady=5)
+
+    lbl_categoria = tk.Label(form_frame_pesquisa, text="Categoria:")
+    lbl_categoria.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+    categoria_entrada = tk.Entry(form_frame_pesquisa)
+    categoria_entrada.grid(row=2, column=1, padx=5, pady=5)
+
+    lbl_cor = tk.Label(form_frame_pesquisa, text="Cor:")
+    lbl_cor.grid(row=2, column=2, padx=5, pady=5, sticky="e")
+    cor_entrada = tk.Entry(form_frame_pesquisa)
+    cor_entrada.grid(row=2, column=3, padx=5, pady=5)
+
+    lbl_preco_min = tk.Label(form_frame_pesquisa, text="Preço Mín:")
+    lbl_preco_min.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+    preco_min_entrada = tk.Entry(form_frame_pesquisa)
+    preco_min_entrada.grid(row=3, column=1, padx=5, pady=5)
+
+    lbl_preco_max = tk.Label(form_frame_pesquisa, text="Preço Máx:")
+    lbl_preco_max.grid(row=3, column=2, padx=5, pady=5, sticky="e")
+    preco_max_entrada = tk.Entry(form_frame_pesquisa)
+    preco_max_entrada.grid(row=3, column=3, padx=5, pady=5)
+
+    lbl_integridade = tk.Label(form_frame_pesquisa, text="Integridade:")
+    lbl_integridade.grid(row=4, column=0, padx=5, pady=5, sticky="e")
+    integridade_entrada = tk.Entry(form_frame_pesquisa)
+    integridade_entrada.grid(row=4, column=1, padx=5, pady=5)
+
+
+    # Botão para pesquisar
+    btn_pesquisar = tk.Button(form_frame_pesquisa, text="Pesquisar", 
+                            command=lambda: pesquisarVeiculo(
+                                marca_entrada.get(),
+                                modelo_entrada.get(),
+                                categoria_entrada.get(),
+                                ano_entrada.get(),
+                                placa_entrada.get(),
+                                cor_entrada.get(),
+                                preco_min_entrada.get(),
+                                preco_max_entrada.get(),
+                                integridade_entrada.get()
+                            ))
+    btn_pesquisar.grid(row=5, column=1)
+
+
     # Execução da interface
     estoque_window.mainloop()
 
-# Funções para verificar o usuario e a senha e abrir o sistema (algusto fazer)
+# Funções para verificar o usuario e a senha e abrir o sistema
 def entrar():
     global usuario
     usuario = entrada_usuario.get()
