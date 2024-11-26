@@ -7,13 +7,13 @@ import mysql.connector
 conexao_banco = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="",
+    password="123456789",
     database="concessionaria"
 )
 
 cursor = conexao_banco.cursor()
 
-# Função para adicionar veículo
+# Função para adicionar veículos
 def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridade):
     # Verifica se todos os campos foram preenchidos
     if placa and ano and marca and modelo and cor and categoria and preco and integridade:
@@ -31,9 +31,8 @@ def cadastarVeiculo(placa, ano, marca, modelo, cor, categoria, preco, integridad
         # Se algum campo estiver em branco mostra a mensagem de erro
         messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de adicionar o veículo.")
 
-# Função para remover veículo
-def removerVeiculo(placa) :
-    print(type(placa))
+#Função para remover veículos
+def removerVeiculo(placa):
     if placa :
         comando = ('SELECT * FROM veiculos WHERE placa = %s')
         cursor.execute(comando, (placa,))
@@ -51,7 +50,7 @@ def removerVeiculo(placa) :
                 messagebox.showerror("Erro", f"Erro ao remover o veículo: {erro}")
     else:
         # Se algum campo estiver em branco mostra a mensagem de erro
-        messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.") 
+        messagebox.showwarning("Atenção", "Por favor, preencha todos os campos antes de remover o veículo.")           
 
 # Função para remover veículo
 def alterarVeiculo(placa, novo_preco=None, nova_cor=None, nova_integridade=None):
@@ -93,6 +92,7 @@ def alterarVeiculo(placa, novo_preco=None, nova_cor=None, nova_integridade=None)
         cursor.execute(comando, valores)
         conexao_banco.commit()
         messagebox.showinfo("Sucesso", "Veículo atualizado com sucesso!")
+
     except mysql.connector.Error as erro:
         messagebox.showerror("Erro", f"Erro ao alterar o veículo: {erro}")
 
@@ -108,7 +108,11 @@ def buscarVeiculo(placa):
         veiculo = cursor.fetchone()
 
         if veiculo:
-            return veiculo  # Retorna os dados do veículo como uma tupla
+            alterarColunasTreeview()
+            # Atualiza a tabela 'tree' para exibir os dados do veículo
+            tree.delete(*tree.get_children())  # Remove todos os itens anteriores
+            tree.insert("", "end", values=veiculo)  # Adiciona os dados do veículo encontrado
+            return veiculo
         else:
             messagebox.showerror("Erro", "Veículo não encontrado.")
             return None
@@ -116,38 +120,130 @@ def buscarVeiculo(placa):
         messagebox.showerror("Erro", f"Erro ao buscar o veículo: {erro}")
         return None
 
-def registrarVendaHistorico(placa, nome_cliente, cpf_cliente, vendedor):
+def registrarVendaHistorico(vendedor, nome_cliente, cpf_cliente, placa, valor):
     try:
-        comando = ("INSERT INTO historico_vendas (placa, nome_cliente, cpf_cliente, vendedor) "
-                   "VALUES (%s, %s, %s, %s, NOW())")
-        cursor.execute(comando, (placa, nome_cliente, cpf_cliente, vendedor))
+        comando = ("INSERT INTO historico_vendas (vendedor, nome_cliente, cpf_cliente, placa, valor) "
+                   "VALUES (%s, %s, %s, %s, %s)")
+        cursor.execute(comando, (vendedor, nome_cliente, cpf_cliente, placa, valor))
         conexao_banco.commit()
         messagebox.showinfo("Sucesso", "Veículo vendido com sucesso e registrado no histórico!")
     except mysql.connector.Error as erro:
         messagebox.showerror("Erro", f"Erro ao registrar a venda no histórico: {erro}")
 
 def venderVeiculo(placa, nome_cliente, cpf_cliente, usuario):
-    veiculo = buscarVeiculo(placa)
+    veiculo = buscarVeiculo(placa)  # Certifique-se de buscar o veículo novamente
     
     if veiculo:
-        # Exibe os dados do veículo para confirmação antes da venda
-        tree.delete(*tree.get_children())
-        tree.insert("", "end", values=veiculo)
-        
+        # Pula a exibição na tree aqui, já foi feita na busca
         resposta = messagebox.askyesno("Confirmar Venda", "Deseja realmente vender este veículo?")
         if resposta:
             try:
-                # Remove o veículo da tabela de veículos (simula a venda)
+                # Registra a venda no histórico de vendas
+                id_venda = registrarVendaHistorico(usuario, nome_cliente, cpf_cliente, placa, veiculo[6])
+                cursor.execute("SELECT LAST_INSERT_ID()")
+                id_venda = cursor.fetchone()[0]
+
+                # Registra a comissão
+                registrarComissao(usuario, veiculo[6], id_venda)
+
+                # Remove o veículo da tabela de veículos
                 cursor.execute("DELETE FROM veiculos WHERE placa = %s", (placa,))
                 conexao_banco.commit()
-                
-                # Registra a venda no histórico de vendas
-                registrarVendaHistorico(placa, nome_cliente, cpf_cliente, usuario)
-                
+
+                messagebox.showinfo("Venda Realizada", "O veículo foi vendido com sucesso!")
             except mysql.connector.Error as erro:
                 messagebox.showerror("Erro", f"Erro ao vender o veículo: {erro}")
+    else:
+        messagebox.showerror("Erro", "Veículo não encontrado para venda.")
 
 
+def registrarComissao(vendedor, valor, id_vendas):
+    try:
+        # Converte o valor para float e calcula a comissão
+        valor_comissao = round(float(valor) * 0.01, 2)
+
+        # Insere os dados na tabela comissoes
+        comando = """
+            INSERT INTO comissoes (vendedor, valor, id_vendas)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(comando, (vendedor, valor_comissao, id_vendas))
+        conexao_banco.commit()
+
+        messagebox.showinfo("Comissão Registrada", f"Comissão de R$ {valor_comissao:.2f} registrada com sucesso!")
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao registrar a comissão: {erro}")
+
+def exibirHistoricoVendas():
+    try:
+        # Limpa o `tree` antes de adicionar os novos dados
+        tree.delete(*tree.get_children())
+
+        # Atualiza as colunas do Treeview para histórico de vendas
+        tree["columns"] = ("ID", "Vendedor", "Cliente", "CPF Cliente", "Placa", "Valor")
+        tree.column("#0", width=0, stretch=tk.NO)  # Oculta a coluna "#0" padrão
+        tree.heading("ID", text="ID")
+        tree.heading("Vendedor", text="Vendedor")
+        tree.heading("Cliente", text="Cliente")
+        tree.heading("CPF Cliente", text="CPF Cliente")
+        tree.heading("Placa", text="Placa")
+        tree.heading("Valor", text="Valor")
+
+        # Busca os dados do histórico de vendas
+        cursor.execute("SELECT id, vendedor, nome_cliente, cpf_cliente, placa, valor FROM historico_vendas")
+        vendas = cursor.fetchall()
+
+        # Preenche o `tree` com os dados de vendas
+        for venda in vendas:
+            tree.insert("", "end", values=venda)
+
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao exibir histórico de vendas: {erro}")
+
+def exibirComissoes():
+    try:
+        # Limpa o `tree` antes de adicionar os novos dados
+        tree.delete(*tree.get_children())
+        
+        # Atualiza as colunas do Treeview para comissões
+        tree["columns"] = ("ID", "Vendedor", "Valor", "ID Venda", "Cliente")
+        tree.column("#0", width=0, stretch=tk.NO)  # Oculta a coluna "#0" padrão
+        tree.heading("ID", text="ID")
+        tree.heading("Vendedor", text="Vendedor")
+        tree.heading("Valor", text="Valor")
+        tree.heading("ID Venda", text="ID Venda")
+        tree.heading("Cliente", text="Cliente")
+
+        # Busca os dados das comissões
+        cursor.execute("""
+            SELECT c.id, c.vendedor, c.valor, c.id_vendas, hv.nome_cliente
+            FROM comissoes c
+            JOIN historico_vendas hv ON c.id_vendas = hv.id
+        """)
+        comissoes = cursor.fetchall()
+
+        # Preenche o `tree` com os dados de comissões
+        for comissao in comissoes:
+            tree.insert("", "end", values=comissao)
+    
+    except mysql.connector.Error as erro:
+        messagebox.showerror("Erro", f"Erro ao exibir comissões: {erro}")
+
+
+def alterarColunasTreeview():
+    # Altera as colunas do Treeview para os dados dos carros
+    tree["columns"] = ("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Integridade")
+    tree.column("#0", width=0, stretch=tk.NO)  # Oculta a coluna "#0" padrão
+    tree.heading("Placa", text="Placa")
+    tree.heading("Ano", text="Ano")
+    tree.heading("Marca", text="Marca")
+    tree.heading("Modelo", text="Modelo")
+    tree.heading("Cor", text="Cor")
+    tree.heading("Categoria", text="Categoria")
+    tree.heading("Preço", text="Preço")
+    tree.heading("Integridade", text="Integridade")
+    
+    
 def ocultar_todos_formularios():
     form_frame_add.pack_forget()
     form_frame_remove.pack_forget()
@@ -175,9 +271,39 @@ def abrir_estoque():
     estoque_window = tk.Tk()
     estoque_window.title("Gerenciador de Estoque")
     estoque_window.geometry("800x500")
-    login_window.destroy() #fecha a janela do login
+    login_window.destroy()  # Fecha a janela do login
 
     global form_frame_add, form_frame_remove, form_frame_alterar, form_frame_venda, tree
+
+    # Frame para o Treeview (onde as informações dos veículos serão exibidas)
+    tree_frame = tk.Frame(estoque_window)
+    tree_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Criando o Treeview para exibir os veículos
+    tree = ttk.Treeview(tree_frame, columns=("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Integridade"), show="headings")
+    
+    # Configurando os títulos das colunas
+    tree.heading("Placa", text="Placa")
+    tree.heading("Ano", text="Ano")
+    tree.heading("Marca", text="Marca")
+    tree.heading("Modelo", text="Modelo")
+    tree.heading("Cor", text="Cor")
+    tree.heading("Categoria", text="Categoria")
+    tree.heading("Preço", text="Preço")
+    tree.heading("Integridade", text="Integridade")
+
+    # Configurando as larguras das colunas (opcional)
+    tree.column("Placa", width=100, anchor=tk.CENTER)
+    tree.column("Ano", width=60, anchor=tk.CENTER)
+    tree.column("Marca", width=100, anchor=tk.W)
+    tree.column("Modelo", width=100, anchor=tk.W)
+    tree.column("Cor", width=80, anchor=tk.W)
+    tree.column("Categoria", width=100, anchor=tk.W)
+    tree.column("Preço", width=80, anchor=tk.E)
+    tree.column("Integridade", width=100, anchor=tk.W)
+
+    # Adicionando o Treeview ao layout
+    tree.pack(fill=tk.BOTH, expand=True)
 
     # Botões de Ação
     button_frame = tk.Frame(estoque_window, pady=10)
@@ -187,8 +313,9 @@ def abrir_estoque():
     tk.Button(button_frame, text="Alterar", command=mostrar_formulario_alterar, width=12).pack(side=tk.LEFT, padx=10)
     tk.Button(button_frame, text="Excluir", command=mostar_formulario_remover, width=12).pack(side=tk.LEFT, padx=10)
     tk.Button(button_frame, text="Vender", command=mostrar_formulario_venda, width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Histórico de vendas", width=12).pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Comissão", width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Histórico de vendas", command=exibirHistoricoVendas, width=12).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Comissões", command=exibirComissoes, width=12).pack(side=tk.LEFT, padx=10)
+
 
     # Frame para Formulário de adicionar 
 
@@ -337,24 +464,6 @@ def abrir_estoque():
         usuario
     )).grid(row=4, column=0, columnspan=2, pady=10)
 
-    # frame para o comissão
-
-
-
-
-    # Tabela de veiculos
-    table_frame = tk.Frame(estoque_window, pady=10)
-    table_frame.pack(fill=tk.BOTH, expand=True)
-
-    columns = ("Placa", "Ano", "Marca", "Modelo", "Cor", "Categoria", "Preço", "Estado")
-    tree = ttk.Treeview(table_frame, columns=columns, show="headings")
-
-    for col in columns:
-        tree.heading(col, text=col)
-        tree.column(col, anchor=tk.CENTER, width=100)
-
-    tree.pack(fill=tk.BOTH, expand=True)
-
     # Execução da interface
     estoque_window.mainloop()
 
@@ -364,11 +473,12 @@ def entrar():
     usuario = entrada_usuario.get()
     senha = entrada_senha.get()
 
-    comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s';
-    cursor.execute(comando, (usuario, senha));
-    resultado = cursor.fetchone();
+    comando = 'SELECT usuario, senha FROM usuarios WHERE usuario = %s AND senha = %s'
+    cursor.execute(comando, (usuario, senha))
+    resultado = cursor.fetchone()
     
-    if len(resultado) > 0:
+    # Verifica se o resultado não é None
+    if resultado:
         messagebox.showinfo("Login", "Login realizado com sucesso!")
         abrir_estoque()
     else:
