@@ -7,7 +7,7 @@ CREATE TABLE usuarios (
   PRIMARY KEY (id));
 
 CREATE TABLE veiculos (
-  placa 				VARCHAR(7) NOT NULL,
+  placa 				VARCHAR(9) NOT NULL,
   ano 				INT NOT NULL,
   marca 			VARCHAR(45) NOT NULL,
   modelo 			VARCHAR(45) NOT NULL,
